@@ -10,7 +10,7 @@ let globalTemplate = null;
 
 export class RecordCompleteness extends HTMLElement {
   static get observedAttributes() {
-    return ['mode', 'listen'];
+    return ['mode', 'collapsed', 'listen'];
   }
 
   static setTemplate(fn) {
@@ -23,12 +23,14 @@ export class RecordCompleteness extends HTMLElement {
     this._record = null;
     this._schema = DEFAULT_METADATA_SCHEMA;
     this._showAll = true;
+    this._collapsed = this.hasAttribute('collapsed');
     this.template = null;
     this._onExternalSelect = this._onExternalSelect.bind(this);
   }
 
   connectedCallback() {
     this._record = parseRecordData(this) || {};
+    this._collapsed = this.hasAttribute('collapsed');
     this.render();
     this._bindEvents();
 
@@ -47,10 +49,25 @@ export class RecordCompleteness extends HTMLElement {
 
   attributeChangedCallback(name, oldVal, newVal) {
     if (oldVal === newVal || !this.isConnected) return;
-    if (name === 'mode') {
+    if (name === 'collapsed') {
+      this._collapsed = this.hasAttribute('collapsed');
+      this.render();
+      this._bindEvents();
+    } else if (name === 'mode') {
       this.render();
       this._bindEvents();
     }
+  }
+
+  setCollapsed(collapsed) {
+    this._collapsed = Boolean(collapsed);
+    if (this._collapsed) {
+      this.setAttribute('collapsed', '');
+    } else {
+      this.removeAttribute('collapsed');
+    }
+    this.render();
+    this._bindEvents();
   }
 
   setRecord(record) {
@@ -74,6 +91,11 @@ export class RecordCompleteness extends HTMLElement {
   }
 
   _bindEvents() {
+    const collapseBtn = this.shadowRoot.querySelector('.toggle-collapse');
+    collapseBtn?.addEventListener('click', () => {
+      this.setCollapsed(!this._collapsed);
+    });
+
     const toggleBtn = this.shadowRoot.querySelector('.toggle-missing');
     toggleBtn?.addEventListener('click', () => {
       this._showAll = !this._showAll;
@@ -110,9 +132,11 @@ export class RecordCompleteness extends HTMLElement {
 
   render() {
     const ev = evaluateCompleteness(this._record, this._schema);
-    const visibleFields = this._showAll
-      ? ev.fields
-      : ev.fields.filter((f) => !f.present);
+    const title =
+      this._record?.title ||
+      this._record?.find_identifier ||
+      this._record?.identifier ||
+      'Untitled Record';
 
     const customFn = this.template || globalTemplate;
     if (typeof customFn === 'function') {
@@ -120,7 +144,67 @@ export class RecordCompleteness extends HTMLElement {
       return;
     }
 
-    const title = this._record?.title || this._record?.identifier || 'Untitled Record';
+    const mode = this.getAttribute('mode') || 'full';
+
+    if (mode === 'score') {
+      this.shadowRoot.innerHTML = `
+        <style>
+          :host {
+            --rc-bg: #ffffff;
+            --rc-fg: #18181b;
+            --rc-border: #e4e4e7;
+            --rc-accent: #0284c7;
+            --rc-radius: 0.5rem;
+            --rc-font: system-ui, -apple-system, sans-serif;
+
+            display: inline-block;
+            font-family: var(--rc-font);
+            color: var(--rc-fg);
+          }
+
+          @media (prefers-color-scheme: dark) {
+            :host(:not([theme="light"])) {
+              --rc-bg: #18181b;
+              --rc-fg: #f4f4f5;
+              --rc-border: #3f3f46;
+            }
+          }
+
+          :host([theme="dark"]) {
+            --rc-bg: #18181b;
+            --rc-fg: #f4f4f5;
+            --rc-border: #3f3f46;
+          }
+
+          .score-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 4px 10px;
+            border-radius: var(--rc-radius);
+            border: 1px solid var(--rc-border);
+            background: var(--rc-bg);
+            font-size: 12px;
+          }
+
+          .score-val {
+            font-family: ui-monospace, monospace;
+            font-weight: 700;
+            color: var(--rc-accent);
+          }
+        </style>
+        <span part="score-only" class="score-pill">
+          <span>${this._esc(title)}</span>
+          <strong class="score-val">${ev.score}%</strong>
+        </span>
+      `;
+      return;
+    }
+
+    const visibleFields = this._showAll
+      ? ev.fields
+      : ev.fields.filter((f) => !f.present);
+
     const summaryText = `${title}: ${ev.score}% complete (${ev.status}). Missing required: ${
       ev.missingRequired.map((f) => f.label).join(', ') || 'none'
     }.`;
@@ -181,7 +265,8 @@ export class RecordCompleteness extends HTMLElement {
         .bar-track { height: 8px; border-radius: 9999px; background: var(--rc-surface); overflow: hidden; margin: 8px 0; }
         .bar-fill { height: 100%; background: var(--rc-accent); transition: width 0.2s ease; }
         .meta-row { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; font-size: 11.5px; color: var(--rc-muted); margin-bottom: 10px; }
-        .actions { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+        .actions { display: flex; flex-wrap: wrap; gap: 6px; }
+        .actions + .list { margin-top: 10px; }
         button {
           font-size: 11px;
           padding: 4px 8px;
@@ -220,32 +305,41 @@ export class RecordCompleteness extends HTMLElement {
           <span>${ev.earnedWeight}/${ev.totalWeight} pts · ${ev.missingRequired.length} required missing</span>
         </div>
         <div class="actions">
-          <button type="button" class="toggle-missing">${this._showAll ? 'Show Missing Only' : 'Show All Fields'}</button>
+          <button type="button" class="toggle-collapse">${this._collapsed ? 'Expand Fields' : 'Collapse Fields'}</button>
+          ${
+            !this._collapsed
+              ? `<button type="button" class="toggle-missing">${this._showAll ? 'Show Missing Only' : 'Show All Fields'}</button>`
+              : ''
+          }
           <button type="button" class="copy-report" data-report="${this._esc(summaryText)}">Copy Summary</button>
           <button type="button" class="inspect-btn">Emit Select</button>
         </div>
-        <div part="fields" class="list">
-          ${
-            visibleFields.length
-              ? visibleFields
-                  .map((f) => {
-                    const statusClass = f.present
-                      ? 'ok'
-                      : f.required
-                        ? 'missing-req'
-                        : 'missing-opt';
-                    const statusText = f.present ? f.preview : 'Missing';
-                    return `
-                      <div class="row">
-                        <span><strong>${this._esc(f.label)}</strong>${f.required ? '<span class="req">required</span>' : ''}</span>
-                        <span class="${statusClass}">${this._esc(statusText)}</span>
-                      </div>
-                    `;
-                  })
-                  .join('')
-              : `<div class="row"><span>All schema fields are populated.</span><span class="ok">100%</span></div>`
-          }
-        </div>
+        ${
+          !this._collapsed
+            ? `<div part="fields" class="list">
+                ${
+                  visibleFields.length
+                    ? visibleFields
+                        .map((f) => {
+                          const statusClass = f.present
+                            ? 'ok'
+                            : f.required
+                              ? 'missing-req'
+                              : 'missing-opt';
+                          const statusText = f.present ? f.preview : 'Missing';
+                          return `
+                            <div class="row">
+                              <span><strong>${this._esc(f.label)}</strong>${f.required ? '<span class="req">required</span>' : ''}</span>
+                              <span class="${statusClass}">${this._esc(statusText)}</span>
+                            </div>
+                          `;
+                        })
+                        .join('')
+                    : `<div class="row"><span>All schema fields are populated.</span><span class="ok">100%</span></div>`
+                }
+              </div>`
+            : ''
+        }
       </div>
     `;
   }

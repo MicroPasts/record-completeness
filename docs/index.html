@@ -28,13 +28,19 @@
         </div>
         <h1 class="text-3xl font-bold tracking-tight">Record Completeness Checker</h1>
         <p class="text-sm text-stone-600 dark:text-zinc-400 mt-1.5 max-w-2xl">
-          Score cultural heritage records against required and recommended metadata fields and spot missing URIs, rights, or provenance.
+          Score cultural heritage records against required and recommended metadata fields, collapse field checklists, or render compact score-only pills.
         </p>
       </div>
-      <button id="theme-toggle" type="button"
-        class="rounded-md border border-stone-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-stone-800 dark:text-zinc-200 px-3 py-1.5 text-xs font-medium hover:bg-stone-100 dark:hover:bg-zinc-800">
-        Toggle Dark Mode
-      </button>
+      <div class="flex items-center gap-2">
+        <a href="./pas.html"
+          class="rounded-md border border-sky-600/40 bg-sky-600/10 text-sky-800 dark:text-sky-300 px-3 py-1.5 text-xs font-medium hover:bg-sky-600/20">
+          PAS 74-Field Audit →
+        </a>
+        <button id="theme-toggle" type="button"
+          class="rounded-md border border-stone-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-stone-800 dark:text-zinc-200 px-3 py-1.5 text-xs font-medium hover:bg-stone-100 dark:hover:bg-zinc-800">
+          Toggle Dark Mode
+        </button>
+      </div>
     </header>
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -75,6 +81,78 @@
             }
           </script>
         </record-completeness>
+      </section>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2 border-t border-stone-200 dark:border-zinc-800">
+      <section class="space-y-2">
+        <h2 class="text-xs font-semibold uppercase tracking-wider text-stone-600 dark:text-zinc-400">
+          3. Collapsed Field List (<code class="font-mono">collapsed</code>)
+        </h2>
+        <p class="text-xs text-stone-500 dark:text-zinc-400">
+          Starts collapsed to show only the score bar and summary; click <strong>Expand Fields</strong> to inspect individual fields.
+        </p>
+        <record-completeness-tw collapsed>
+          <script type="application/json">
+            {
+              "identifier": "PAS-HAMP-88B210",
+              "title": "Medieval copper-alloy strap-end",
+              "type": "Strap-end",
+              "date": "AD 1250–1400",
+              "place": "",
+              "description": "Cast copper-alloy strap-end with engraved foliate motif.",
+              "rights": "CC BY 4.0"
+            }
+          </script>
+        </record-completeness-tw>
+      </section>
+
+      <section class="space-y-3">
+        <h2 class="text-xs font-semibold uppercase tracking-wider text-stone-600 dark:text-zinc-400">
+          4. Score-Only Compact Mode (<code class="font-mono">mode="score"</code>)
+        </h2>
+        <p class="text-xs text-stone-500 dark:text-zinc-400">
+          Compact inline badges suitable for search result rows, tables, or record headers.
+        </p>
+        <div class="flex flex-wrap items-center gap-2.5 pt-1">
+          <record-completeness mode="score">
+            <script type="application/json">
+              {
+                "identifier": "PAS-SUR-12A901",
+                "title": "Roman silver denarius of Trajan",
+                "type": "Coin",
+                "date": "AD 98–117",
+                "rights": "CC BY 4.0"
+              }
+            </script>
+          </record-completeness>
+
+          <record-completeness-tw mode="score">
+            <script type="application/json">
+              {
+                "identifier": "EXC-2026-044",
+                "title": "Copper-alloy brooches (pair)",
+                "type": "Fibula"
+              }
+            </script>
+          </record-completeness-tw>
+
+          <record-completeness-tw mode="score">
+            <script type="application/json">
+              {
+                "identifier": "PAS-NCL-4410C9",
+                "title": "Early medieval sceatta",
+                "type": "Coin",
+                "date": "AD 710–750",
+                "place": "Norfolk",
+                "description": "Series R silver sceatta.",
+                "rights": "CC BY 4.0",
+                "authorityUri": "https://nomisma.org/id/sceat",
+                "creator": "FLO Norfolk"
+              }
+            </script>
+          </record-completeness-tw>
+        </div>
       </section>
     </div>
 

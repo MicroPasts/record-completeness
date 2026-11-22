@@ -14,7 +14,10 @@ function isPopulated(value) {
   if (value === null || value === undefined) return false;
   if (typeof value === 'boolean') return true;
   if (typeof value === 'number') return Number.isFinite(value);
-  if (typeof value === 'string') return value.trim().length > 0;
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    return trimmed.length > 0 && trimmed.toUpperCase() !== 'NULL';
+  }
   if (Array.isArray(value)) return value.some((item) => isPopulated(item));
   if (typeof value === 'object') {
     return Object.values(value).some((v) => isPopulated(v));
@@ -30,10 +33,6 @@ function summarizeValue(value) {
   return str.length > 48 ? `${str.slice(0, 47)}…` : str;
 }
 
-/**
- * Evaluate a record object against a metadata schema.
- * Returns { score, totalWeight, earnedWeight, fields, missingRequired, missingRecommended, status }.
- */
 export function evaluateCompleteness(record = {}, schema = DEFAULT_METADATA_SCHEMA) {
   const rec = record && typeof record === 'object' ? record : {};
   const activeSchema = Array.isArray(schema) && schema.length ? schema : DEFAULT_METADATA_SCHEMA;
@@ -106,7 +105,7 @@ export function emitRecordSelect(target, record, evaluation) {
       composed: true,
       detail: {
         uri: record?.authorityUri || record?.uri || '',
-        identifier: record?.identifier || '',
+        identifier: record?.find_identifier || record?.identifier || '',
         title: record?.title || '',
         completenessScore: evaluation?.score ?? null,
         record,

@@ -7,9 +7,15 @@ import {
 } from './core.js';
 
 export class RecordCompletenessTailwind extends HTMLElement {
+  static get observedAttributes() {
+    return ['mode', 'collapsed', 'listen'];
+  }
+
   static classes = {
     card:
       'rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 text-zinc-900 dark:text-zinc-100',
+    scorePill:
+      'inline-flex items-center gap-2 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-2.5 py-1 text-xs text-zinc-900 dark:text-zinc-100',
     btn:
       'rounded border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-800 dark:text-zinc-200 px-2.5 py-1 text-[11px] font-medium hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors',
   };
@@ -19,6 +25,7 @@ export class RecordCompletenessTailwind extends HTMLElement {
     this._record = null;
     this._schema = DEFAULT_METADATA_SCHEMA;
     this._showAll = true;
+    this._collapsed = this.hasAttribute('collapsed');
     this._initialized = false;
     this._onExternalSelect = this._onExternalSelect.bind(this);
   }
@@ -27,6 +34,7 @@ export class RecordCompletenessTailwind extends HTMLElement {
     if (this._initialized) return;
     this._initialized = true;
     this._record = parseRecordData(this) || {};
+    this._collapsed = this.hasAttribute('collapsed');
     this.render();
 
     const listenEvent = this.getAttribute('listen');
@@ -42,8 +50,33 @@ export class RecordCompletenessTailwind extends HTMLElement {
     }
   }
 
+  attributeChangedCallback(name, oldVal, newVal) {
+    if (oldVal === newVal || !this._initialized) return;
+    if (name === 'collapsed') {
+      this._collapsed = this.hasAttribute('collapsed');
+      this.render();
+    } else if (name === 'mode') {
+      this.render();
+    }
+  }
+
+  setCollapsed(collapsed) {
+    this._collapsed = Boolean(collapsed);
+    if (this._collapsed) {
+      this.setAttribute('collapsed', '');
+    } else {
+      this.removeAttribute('collapsed');
+    }
+    this.render();
+  }
+
   setRecord(record) {
     this._record = record || {};
+    this.render();
+  }
+
+  setSchema(schema) {
+    this._schema = Array.isArray(schema) && schema.length ? schema : DEFAULT_METADATA_SCHEMA;
     this.render();
   }
 
@@ -65,15 +98,32 @@ export class RecordCompletenessTailwind extends HTMLElement {
   render() {
     const c = RecordCompletenessTailwind.classes;
     const ev = evaluateCompleteness(this._record, this._schema);
+    const title =
+      this._record?.title ||
+      this._record?.find_identifier ||
+      this._record?.identifier ||
+      'Untitled Record';
+
+    const mode = this.getAttribute('mode') || 'full';
+    const cardClass = `${c.card} ${this.getAttribute('card-class') || ''}`.trim();
+
+    if (mode === 'score') {
+      this.innerHTML = `
+        <span class="${c.scorePill} ${this.getAttribute('card-class') || ''}">
+          <span class="truncate max-w-[200px]">${this._esc(title)}</span>
+          <strong class="font-mono font-bold text-sky-700 dark:text-sky-400">${ev.score}%</strong>
+        </span>
+      `;
+      return;
+    }
+
     const visibleFields = this._showAll
       ? ev.fields
       : ev.fields.filter((f) => !f.present);
 
-    const title = this._record?.title || this._record?.identifier || 'Untitled Record';
     const summaryText = `${title}: ${ev.score}% complete (${ev.status}). Missing required: ${
       ev.missingRequired.map((f) => f.label).join(', ') || 'none'
     }.`;
-    const cardClass = `${c.card} ${this.getAttribute('card-class') || ''}`.trim();
 
     this.innerHTML = `
       <div class="${cardClass}">
@@ -92,37 +142,50 @@ export class RecordCompletenessTailwind extends HTMLElement {
         </div>
 
         <div class="mt-3 flex flex-wrap gap-2">
-          <button type="button" data-rc-toggle class="${c.btn}">${this._showAll ? 'Show Missing Only' : 'Show All Fields'}</button>
+          <button type="button" data-rc-collapse class="${c.btn}">${this._collapsed ? 'Expand Fields' : 'Collapse Fields'}</button>
+          ${
+            !this._collapsed
+              ? `<button type="button" data-rc-toggle class="${c.btn}">${this._showAll ? 'Show Missing Only' : 'Show All Fields'}</button>`
+              : ''
+          }
           <button type="button" data-rc-copy data-report="${this._esc(summaryText)}" class="${c.btn}">Copy Summary</button>
           <button type="button" data-rc-select class="${c.btn}">Emit Select</button>
         </div>
 
-        <div class="mt-3 space-y-1.5">
-          ${
-            visibleFields.length
-              ? visibleFields
-                  .map((f) => {
-                    const badgeClass = f.present
-                      ? 'text-emerald-700 dark:text-emerald-400 font-medium'
-                      : f.required
-                        ? 'text-red-700 dark:text-red-400 font-semibold'
-                        : 'text-amber-700 dark:text-amber-400 font-medium';
-                    return `
-                      <div class="flex items-center justify-between gap-2 rounded-md bg-zinc-50 dark:bg-zinc-950/70 border border-zinc-200/80 dark:border-zinc-800 px-2.5 py-1.5 text-xs">
-                        <span class="text-zinc-800 dark:text-zinc-200">
-                          <strong>${this._esc(f.label)}</strong>
-                          ${f.required ? '<span class="ml-1 text-[10px] uppercase text-zinc-500">required</span>' : ''}
-                        </span>
-                        <span class="${badgeClass}">${f.present ? this._esc(f.preview) : 'Missing'}</span>
-                      </div>
-                    `;
-                  })
-                  .join('')
-              : `<div class="rounded-md bg-zinc-50 dark:bg-zinc-950/70 px-2.5 py-2 text-xs text-emerald-700 dark:text-emerald-400">All fields complete (100%).</div>`
-          }
-        </div>
+        ${
+          !this._collapsed
+            ? `<div class="mt-3 space-y-1.5">
+                ${
+                  visibleFields.length
+                    ? visibleFields
+                        .map((f) => {
+                          const badgeClass = f.present
+                            ? 'text-emerald-700 dark:text-emerald-400 font-medium'
+                            : f.required
+                              ? 'text-red-700 dark:text-red-400 font-semibold'
+                              : 'text-amber-700 dark:text-amber-400 font-medium';
+                          return `
+                            <div class="flex items-center justify-between gap-2 rounded-md bg-zinc-50 dark:bg-zinc-950/70 border border-zinc-200/80 dark:border-zinc-800 px-2.5 py-1.5 text-xs">
+                              <span class="text-zinc-800 dark:text-zinc-200">
+                                <strong>${this._esc(f.label)}</strong>
+                                ${f.required ? '<span class="ml-1 text-[10px] uppercase text-zinc-500">required</span>' : ''}
+                              </span>
+                              <span class="${badgeClass}">${f.present ? this._esc(f.preview) : 'Missing'}</span>
+                            </div>
+                          `;
+                        })
+                        .join('')
+                    : `<div class="rounded-md bg-zinc-50 dark:bg-zinc-950/70 px-2.5 py-2 text-xs text-emerald-700 dark:text-emerald-400">All fields complete (100%).</div>`
+                }
+              </div>`
+            : ''
+        }
       </div>
     `;
+
+    this.querySelector('[data-rc-collapse]')?.addEventListener('click', () => {
+      this.setCollapsed(!this._collapsed);
+    });
 
     this.querySelector('[data-rc-toggle]')?.addEventListener('click', () => {
       this._showAll = !this._showAll;

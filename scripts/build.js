@@ -25,6 +25,7 @@ const coreCode = readSrc('core.js');
 const shadowCode = readSrc('shadow.js');
 const tailwindCode = readSrc('tailwind.js');
 const demoHtml = readSrc('demo.html');
+const pasHtml = readSrc('pas.html');
 
 const banner = `/**
  * @micropasts/record-completeness v0.1.0
@@ -64,5 +65,6 @@ fs.writeFileSync(path.join(distDir, 'record-completeness.esm.js'), esmBundle, 'u
 fs.writeFileSync(path.join(distDir, 'record-completeness.iife.js'), iifeBundle, 'utf8');
 fs.writeFileSync(path.join(docsDir, 'record-completeness.esm.js'), esmBundle, 'utf8');
 fs.writeFileSync(path.join(docsDir, 'index.html'), demoHtml, 'utf8');
+fs.writeFileSync(path.join(docsDir, 'pas.html'), pasHtml, 'utf8');
 
-console.log('Built dist/ and docs/ for @micropasts/record-completeness.');
+console.log('Built dist/ and docs/ (index.html + pas.html) for @micropasts/record-completeness.');

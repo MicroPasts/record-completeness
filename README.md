@@ -1,32 +1,29 @@
 # @micropasts/record-completeness
 
-Zero-dependency JavaScript Web Components for scoring cultural heritage metadata records.
+Framework-free Web Components for auditing the completeness of cultural heritage and archaeological metadata records.
 
-`@micropasts/record-completeness` evaluates a record against required and recommended fields, calculates a weighted completeness score, reports missing values, and emits structured selection events. It includes:
+The package evaluates a record against a weighted schema, reports required and recommended fields that are missing, and emits structured selection events. It provides two renderers:
 
-- A self-contained Shadow DOM component
-- A Tailwind-oriented Light DOM component
-- A framework-independent core API
+- `<record-completeness>`: isolated Shadow DOM with built-in styling
+- `<record-completeness-tw>`: Light DOM markup intended for Tailwind CSS or page-level CSS
+
+Both components support full cards, collapsible field lists, compact score-only mode, custom schemas, record updates, and external selection listeners.
+
+## Features
+
+- Zero runtime dependencies
+- Weighted completeness scores
+- Required and recommended field status
+- Full and score-only display modes
+- Collapsible field lists
+- Shadow DOM and Light DOM implementations
+- Custom metadata schemas
+- Custom Shadow DOM templates
+- Embedded JSON or JSON attribute data
+- Clipboard summaries
+- `heritage:select` events
 - ESM and IIFE browser builds
-- Custom schemas and custom Shadow DOM templates
-
-The package is intended for museum, archaeological, archive, and collection interfaces, but it does not require a framework or a backend.
-
-## Table of contents
-
-- [Installation](#installation)
-- [Quick start](#quick-start)
-- [Providing record data](#providing-record-data)
-- [Components](#components)
-- [Completeness scoring](#completeness-scoring)
-- [Custom schemas](#custom-schemas)
-- [Events](#events)
-- [JavaScript API](#javascript-api)
-- [Shadow DOM customization](#shadow-dom-customization)
-- [Browser builds](#browser-builds)
-- [Development](#development)
-- [Browser support](#browser-support)
-- [License](#license)
+- Live default-schema and 74-column PAS demos
 
 ## Installation
 
@@ -40,17 +37,17 @@ npm install @micropasts/record-completeness
 import '@micropasts/record-completeness';
 ```
 
-The package uses native custom elements. The components are registered automatically for tag names that have not already been used.
+The package registers both custom elements automatically, unless those tag names are already registered.
 
 ### CDN
 
-The IIFE build exposes `window.RecordCompletenessLib` and registers both custom elements.
+Load the standalone IIFE build:
 
 ```html
 <script src="https://cdn.jsdelivr.net/npm/@micropasts/record-completeness/dist/record-completeness.iife.js"></script>
 ```
 
-The ESM build can also be loaded directly:
+Or load the ESM bundle directly:
 
 ```html
 <script type="module">
@@ -58,9 +55,11 @@ The ESM build can also be loaded directly:
 </script>
 ```
 
+The IIFE build registers the components and exposes `window.RecordCompletenessLib`.
+
 ## Quick start
 
-For the default Shadow DOM component:
+### Full Shadow DOM card
 
 ```html
 <record-completeness>
@@ -71,7 +70,7 @@ For the default Shadow DOM component:
       "type": "Coin",
       "date": "AD 98-117",
       "place": "Near Farnham, Surrey",
-      "description": "Silver denarius depicting Trajan.",
+      "description": "Silver denarius depicting Trajan",
       "rights": "CC BY 4.0",
       "authorityUri": "https://nomisma.org/id/denarius"
     }
@@ -83,7 +82,7 @@ For the default Shadow DOM component:
 </script>
 ```
 
-For the Light DOM component, which can be styled with Tailwind CSS or ordinary CSS:
+### Full Tailwind/Light DOM card
 
 ```html
 <record-completeness-tw>
@@ -96,15 +95,52 @@ For the Light DOM component, which can be styled with Tailwind CSS or ordinary C
     }
   </script>
 </record-completeness-tw>
-
-<script type="module">
-  import '@micropasts/record-completeness';
-</script>
 ```
 
-## Providing record data
+### Collapsed card
 
-The recommended form is a nested `script[type="application/json"]` element. It keeps JSON separate from HTML attributes and allows complete nested objects or arrays.
+```html
+<record-completeness-tw collapsed>
+  <script type="application/json">
+    {
+      "identifier": "PAS-HAMP-88B210",
+      "title": "Medieval copper-alloy strap-end",
+      "type": "Strap-end",
+      "rights": "CC BY 4.0"
+    }
+  </script>
+</record-completeness-tw>
+```
+
+A collapsed card shows the title, score, status, points, and action buttons. It hides the field list until **Expand Fields** is selected.
+
+### Compact score mode
+
+```html
+<record-completeness mode="score">
+  <script type="application/json">
+    {
+      "title": "Roman silver denarius",
+      "identifier": "PAS-SUR-12A901"
+    }
+  </script>
+</record-completeness>
+
+<record-completeness-tw mode="score">
+  <script type="application/json">
+    {
+      "title": "Copper-alloy brooches",
+      "identifier": "EXC-2026-044"
+    }
+  </script>
+</record-completeness-tw>
+```
+
+Score mode renders an inline title-and-percentage badge. It is suitable for search results, tables, record headers, and list views.
+
+## Supplying record data
+
+The preferred source is a nested JSON script:
 
 ```html
 <record-completeness>
@@ -112,15 +148,13 @@ The recommended form is a nested `script[type="application/json"]` element. It k
     {
       "identifier": "MCR-2026-001",
       "title": "Tested record",
-      "creator": "Anonymised recorder",
-      "rights": "CC0",
-      "authorityUri": "http://vocab.getty.edu/page/aat/300037213"
+      "rights": "CC0"
     }
   </script>
 </record-completeness>
 ```
 
-A JSON `record` attribute is also accepted:
+JSON can also be supplied through the `record` attribute:
 
 ```html
 <record-completeness
@@ -128,9 +162,9 @@ A JSON `record` attribute is also accepted:
 </record-completeness>
 ```
 
-If both forms are present, the `record` attribute takes precedence. Invalid JSON in either source is treated as an empty record.
+The attribute is checked first. If it is present but contains invalid JSON, the component does not fall back to a nested script. If neither source contains valid JSON, the record is treated as `{}`.
 
-Records can be updated at runtime:
+Update a component after initialization:
 
 ```js
 const checker = document.querySelector('record-completeness');
@@ -139,29 +173,42 @@ checker.setRecord({
   identifier: 'MCR-002',
   title: 'Updated record',
   rights: 'CC BY 4.0',
-  authorityUri: 'https://example.org/authorities/objects/002',
+  authorityUri: 'https://example.org/authorities/002',
 });
 ```
 
-Both components support `setRecord(record)`. Values can be strings, numbers, booleans, arrays, or objects. Empty strings, whitespace, `null`, `undefined`, empty arrays, and objects with no populated values count as missing.
+Both components implement `setRecord(record)`. The same title fallback is used in both renderers:
+
+1. `record.title`
+2. `record.find_identifier`
+3. `record.identifier`
+4. `"Untitled Record"`
 
 ## Components
 
 ### `<record-completeness>`
 
-The default component uses a Shadow DOM. Its interface is isolated from page styles and includes automatic light/dark theme support based on:
+The Shadow DOM component uses native encapsulated styles and exposes:
 
-- `theme="light"`
-- `theme="dark"`
-- `prefers-color-scheme`, when no theme is forced
+- Full card mode
+- `mode="score"` compact pill mode
+- `collapsed` field-list mode
+- Theme attributes
+- Shadow DOM CSS custom properties
+- CSS Shadow Parts
+- Custom templates
 
-It is registered from `src/shadow.js` and exported as `RecordCompleteness`.
+Register and import it with:
+
+```js
+import { RecordCompleteness } from '@micropasts/record-completeness';
+```
 
 ### `<record-completeness-tw>`
 
-The Tailwind component renders into the element's Light DOM. It is designed to work with Tailwind utility classes while remaining usable with custom CSS.
+The Light DOM component renders ordinary HTML that can be styled with Tailwind utilities or application CSS.
 
-An optional `card-class` attribute adds classes to the card:
+It supports `card-class` for extending the card element:
 
 ```html
 <record-completeness-tw card-class="shadow-lg max-w-md">
@@ -169,11 +216,39 @@ An optional `card-class` attribute adds classes to the card:
 </record-completeness-tw>
 ```
 
-The component is exported as `RecordCompletenessTailwind`.
+In score mode, `card-class` is applied to the score pill as well.
+
+Import it directly with:
+
+```js
+import { RecordCompletenessTailwind } from '@micropasts/record-completeness/tailwind';
+```
+
+## Attributes
+
+| Attribute | Components | Behavior |
+| --- | --- | --- |
+| `record` | Both | JSON-encoded record object |
+| `mode="full"` | Both | Default full card and field list |
+| `mode="score"` | Both | Compact title-and-score pill |
+| `collapsed` | Both | Hides field rows by default |
+| `listen="event-name"` | Both | Updates from an external window event |
+| `theme="light"` | Shadow DOM | Forces light styling |
+| `theme="dark"` | Shadow DOM | Forces dark styling |
+| `card-class` | Tailwind | Adds classes to card or score pill markup |
+
+`collapsed` can be changed at runtime:
+
+```js
+checker.setCollapsed(true);  // hides fields
+checker.setCollapsed(false); // shows fields
+```
+
+Changing `collapsed` updates the corresponding attribute and re-renders the component.
 
 ## Completeness scoring
 
-The default schema contains these fields:
+The default schema is:
 
 | Key | Label | Weight | Required |
 | --- | --- | ---: | :---: |
@@ -181,34 +256,37 @@ The default schema contains these fields:
 | `title` | Title | 15 | Yes |
 | `type` | Object / Record Type | 12 | Yes |
 | `date` | Date / Period | 12 | Yes |
-| `rights` | Rights / Licence | 10 | Yes |
 | `place` | Provenance / Findspot | 12 | No |
 | `description` | Description | 10 | No |
+| `rights` | Rights / Licence | 10 | Yes |
 | `authorityUri` | Authority URI | 8 | No |
 | `creator` | Creator / Recorder | 6 | No |
 
-The score is the sum of weights for populated fields divided by the sum of all active schema weights:
+The score is:
 
 ```text
-score = round(populated weight / total weight * 100)
+round(populated weight / total active schema weight * 100)
 ```
 
-The display status is determined as follows:
+The status is:
 
-- **Complete**: no required fields are missing and the score is at least 85
-- **Partial**: no required fields are missing, but the score is between 50 and 84 or a recommended field is missing
-- **Needs Attention**: at least one required field is missing or the score is below 50
+- **Needs Attention**: at least one required field is missing, or score is below 50
+- **Partial**: no required fields are missing, but score is below 85 or a recommended field is missing
+- **Complete**: no required fields are missing, score is 85 or above, and no recommended fields are missing
 
-The default UI button:
+A field is populated when it is:
 
-- **Show Missing Only** hides populated fields
-- **Show All Fields** restores the complete field list
-- **Copy Summary** copies a plain-text audit summary
-- **Emit Select** dispatches a selection event
+- a non-empty string
+- a finite number
+- a boolean
+- an array containing at least one populated item
+- an object containing at least one populated value
+
+The string `"NULL"` is treated as missing after case-insensitive whitespace trimming. Empty strings, whitespace, `null`, `undefined`, empty arrays, and objects with no populated values are also missing.
 
 ## Custom schemas
 
-Pass a schema array to `setSchema()` on `<record-completeness>`:
+Both components support `setSchema(schema)`:
 
 ```js
 const schema = [
@@ -220,24 +298,106 @@ const schema = [
 ];
 
 document.querySelector('record-completeness').setSchema(schema);
+document.querySelector('record-completeness-tw').setSchema(schema);
 ```
 
-Each schema item supports:
+Each schema entry accepts:
 
 | Property | Type | Description |
 | --- | --- | --- |
-| `key` | `string` | Property name read from the record |
-| `label` | `string` | Human-readable field name |
-| `weight` | `number` | Points contributed by the field |
-| `required` | `boolean` | Whether a missing field blocks the **Complete** state |
+| `key` | `string` | Record property to inspect |
+| `label` | `string` | Display label |
+| `weight` | `number` | Points awarded when populated |
+| `required` | `boolean` | Whether absence marks the record as incomplete |
 
-An empty or invalid schema falls back to `DEFAULT_METADATA_SCHEMA`.
+An empty or invalid schema falls back to `DEFAULT_METADATA_SCHEMA`. The default weight is `10` when a weight is omitted, and the key is used as the label when `label` is omitted.
 
-The Tailwind component currently uses the default schema. Use the core `evaluateCompleteness(record, schema)` function for custom schemas outside `<record-completeness>`.
+### PAS/antiquities 74-column demo
+
+The demo site includes `docs/pas.html`, which audits a PAS-style antiquities record with 74 schema fields. It demonstrates a 74-column custom schema applied to `<record-completeness-tw>`.
+
+The PAS example:
+
+- uses `find_identifier` as a title fallback
+- treats a literal `"NULL"` value as missing
+- makes every field required except `updated_by` and `updated_at`
+- gives `find_identifier`, `title`, and `description` extra weight
+- covers identifiers, discovery, dating, dimensions, materials, workflow, treasure status, and database metadata
+
+Open it through `pas.html` when using the demo site.
+
+## Evaluation API
+
+```js
+import {
+  DEFAULT_METADATA_SCHEMA,
+  evaluateCompleteness,
+  parseRecordData,
+  emitRecordSelect,
+  copyTextToClipboard,
+} from '@micropasts/record-completeness';
+```
+
+Subpath imports are available:
+
+```js
+import { evaluateCompleteness } from '@micropasts/record-completeness/core';
+import { RecordCompleteness } from '@micropasts/record-completeness/shadow';
+import { RecordCompletenessTailwind } from '@micropasts/record-completeness/tailwind';
+```
+
+### `evaluateCompleteness(record, schema)`
+
+```js
+const evaluation = evaluateCompleteness(record);
+
+evaluation.score;
+evaluation.earnedWeight;
+evaluation.totalWeight;
+evaluation.fields;
+evaluation.missingRequired;
+evaluation.missingRecommended;
+evaluation.status;
+```
+
+Each field result includes:
+
+```js
+{
+  key: 'title',
+  label: 'Title',
+  weight: 15,
+  required: true,
+  present: true,
+  preview: 'Roman silver denarius',
+}
+```
+
+Field previews use:
+
+- `"Missing"` for absent values
+- `${length} item(s)` for arrays
+- `"Structured value"` for objects
+- the original string for short values
+- a shortened string with an ellipsis for values over 48 characters
+
+### `parseRecordData(element)`
+
+Returns a parsed record from the element's `record` attribute or nested `script[type="application/json"]`, or `null`.
+
+### `copyTextToClipboard(text)`
+
+Uses `navigator.clipboard.writeText()` in secure browser contexts, then falls back to a temporary textarea and `document.execCommand('copy')`.
+
+Returns `true` for a successful copy and `false` for an empty value or failed copy.
+
+### `emitRecordSelect(target, record, evaluation)`
+
+Dispatches a bubbling, composed `heritage:select` event from `target`.
 
 ## Events
 
-The `heritage:select` event is emitted by the **Emit Select** button or by `emitRecordSelect()`.
+The built-in **Emit Select** button calls `emitRecordSelect()`. Listen for the event like this:
 
 ```js
 document.addEventListener('heritage:select', (event) => {
@@ -245,7 +405,7 @@ document.addEventListener('heritage:select', (event) => {
 });
 ```
 
-The event bubbles and crosses the Shadow DOM boundary. Its detail is:
+The event detail is:
 
 ```js
 {
@@ -257,9 +417,14 @@ The event bubbles and crosses the Shadow DOM boundary. Its detail is:
 }
 ```
 
-`uri` is read from `record.authorityUri`, then falls back to `record.uri`. Other values are populated from `record.identifier` and `record.title`.
+Mapping rules:
 
-Components can listen to an external custom event and adopt its `detail.record` value:
+- `uri`: `record.authorityUri`, then `record.uri`
+- `identifier`: `record.find_identifier`, then `record.identifier`
+- `title`: `record.title`
+- `completenessScore`: the evaluation score, or `null`
+
+### Listen to an external event
 
 ```html
 <record-completeness listen="museum:selected"></record-completeness>
@@ -278,85 +443,23 @@ window.dispatchEvent(new CustomEvent('museum:selected', {
 }));
 ```
 
-The listener is registered on `window` and removed when the component disconnects.
+Components on `window` listen for the configured event name and adopt `event.detail.record`. Their listeners are removed when they disconnect.
 
-## JavaScript API
+## Component methods
 
-The package exports the core API, both component classes, and the default schema.
-
-```js
-import {
-  DEFAULT_METADATA_SCHEMA,
-  evaluateCompleteness,
-  parseRecordData,
-  emitRecordSelect,
-  copyTextToClipboard,
-  RecordCompleteness,
-  RecordCompletenessTailwind,
-} from '@micropasts/record-completeness';
-```
-
-Subpath imports are also available:
-
-```js
-import { evaluateCompleteness } from '@micropasts/record-completeness/core';
-import { RecordCompleteness } from '@micropasts/record-completeness/shadow';
-import { RecordCompletenessTailwind } from '@micropasts/record-completeness/tailwind';
-```
-
-### `evaluateCompleteness(record, schema)`
-
-Evaluates a record and returns:
-
-```js
-const evaluation = evaluateCompleteness(record);
-
-evaluation.score;
-evaluation.earnedWeight;
-evaluation.totalWeight;
-evaluation.fields;
-evaluation.missingRequired;
-evaluation.missingRecommended;
-evaluation.status;
-```
-
-Each entry in `fields` contains:
-
-```js
-{
-  key: 'title',
-  label: 'Title',
-  weight: 15,
-  required: true,
-  present: true,
-  preview: 'Roman silver denarius',
-}
-```
-
-Arrays are represented as item counts, objects as `Structured value`, and long strings are shortened for display. `missingRequired` and `missingRecommended` contain the corresponding field entries.
-
-### `parseRecordData(element)`
-
-Returns the JSON record embedded in an element's `record` attribute or nested JSON script, or `null` when no valid record is available.
-
-### `emitRecordSelect(target, record, evaluation)`
-
-Dispatches `heritage:select` from `target`, with a record and optional evaluation attached to `event.detail`.
-
-### `copyTextToClipboard(text)`
-
-Asynchronously copies text using the modern Clipboard API where secure contexts allow it, with a temporary textarea fallback. It resolves to `true` when copying succeeds and `false` otherwise.
-
-### Component methods
+Both component classes provide:
 
 ```js
 checker.setRecord(record);
-checker.setSchema(schema); // Shadow DOM component only
+checker.setSchema(schema);
+checker.setCollapsed(true);
 ```
+
+The Tailwind component also uses `setSchema()`; custom schemas are not limited to the Shadow DOM renderer.
 
 ## Shadow DOM customization
 
-The Shadow DOM component exposes CSS custom properties on `:host`:
+The Shadow DOM component uses these CSS custom properties:
 
 ```css
 record-completeness {
@@ -374,7 +477,7 @@ record-completeness {
 }
 ```
 
-The default markup includes these exported Shadow DOM parts:
+The full renderer exposes these Shadow Parts:
 
 ```css
 record-completeness::part(card) {}
@@ -385,7 +488,9 @@ record-completeness::part(bar) {}
 record-completeness::part(fields) {}
 ```
 
-For a completely custom rendering function:
+The score-only renderer also exposes `part="score-only"`.
+
+Set a custom template for every Shadow DOM instance:
 
 ```js
 import { RecordCompleteness } from '@micropasts/record-completeness';
@@ -398,25 +503,25 @@ RecordCompleteness.setTemplate((evaluation, record, escapeHtml) => `
 `);
 ```
 
-A template can also be assigned to one instance:
+Set a template for one instance:
 
 ```js
 document.querySelector('record-completeness').template =
   (evaluation, record, escapeHtml) =>
-    `<strong>${escapeHtml(record.identifier)}: ${evaluation.score}%</strong>`;
+    `<strong>${escapeHtml(record.title || record.identifier)}: ${evaluation.score}%</strong>`;
 ```
 
-Custom templates replace the built-in Shadow DOM markup. They should use the supplied `escapeHtml` function for untrusted record text and may bind actions to `evaluation` and `record`.
+Custom templates take precedence over the built-in full and score-only renderers. Escape untrusted record values with the supplied `escapeHtml()` function.
 
 ## Browser builds
 
-| File | Use |
+| File | Purpose |
 | --- | --- |
-| `dist/record-completeness.esm.js` | Bundled ES module for browser or bundler use |
-| `dist/record-completeness.iife.js` | Standalone browser script and `window.RecordCompletenessLib` |
-| `dist/record-completeness.esm.js` | Main and module entry in `package.json` |
-| `docs/record-completeness.esm.js` | Live demo bundle |
-| `docs/index.html` | Live Tailwind and Shadow DOM demo |
+| `dist/record-completeness.esm.js` | Bundled ES module |
+| `dist/record-completeness.iife.js` | Standalone browser script |
+| `docs/record-completeness.esm.js` | Demo bundle |
+| `docs/index.html` | Default-schema demo |
+| `docs/pas.html` | 74-column PAS/antiquities schema demo |
 
 The IIFE build exposes:
 
@@ -441,22 +546,25 @@ npm run dev
 `npm run build` recreates `dist/` and `docs/`:
 
 ```text
-scripts/build.js
-├── dist/record-completeness.esm.js
-├── dist/record-completeness.iife.js
-├── docs/record-completeness.esm.js
-└── docs/index.html
+dist/
+├── record-completeness.esm.js
+└── record-completeness.iife.js
+
+docs/
+├── index.html
+├── pas.html
+└── record-completeness.esm.js
 ```
 
 `npm run dev` builds the project and serves `docs/` with `npx serve`.
 
-The GitHub Actions workflow at `.github/workflows/pages.yml` rebuilds the demo and deploys `docs/` to GitHub Pages on pushes to `main`.
+The GitHub Actions workflow rebuilds the demos and deploys `docs/` to GitHub Pages after pushes to `main`.
 
 ## Browser support
 
-The package uses Web Components, Shadow DOM, `CustomEvent`, `customElements`, `HTMLElement`, and modern JavaScript modules. It is suitable for current evergreen browsers. The package has no runtime dependencies.
+The package is suitable for current evergreen browsers and uses native custom elements, Shadow DOM, `CustomEvent`, and JavaScript modules. It has no runtime dependencies.
 
-For broad compatibility, serve the package on the same origin or from HTTPS and provide a current polyfill stack only if legacy browser support is required.
+Applications requiring older browsers may need a Web Components polyfill stack.
 
 ## License
 

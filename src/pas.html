@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>@micropasts/record-completeness — PAS / Antiquities Record Audit</title>
+  <script>
+    (function () {
+      const saved = localStorage.getItem('rc-demo-theme');
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      if (saved === 'dark' || (!saved && prefersDark)) {
+        document.documentElement.classList.add('dark');
+      }
+    })();
+  </script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = { darkMode: 'class' };
+  </script>
+</head>
+<body class="bg-stone-50 text-stone-900 dark:bg-zinc-950 dark:text-zinc-100 min-h-screen transition-colors">
+  <div class="max-w-5xl mx-auto px-6 py-10 space-y-8">
+
+    <header class="flex flex-wrap items-start justify-between gap-4 border-b border-stone-200 dark:border-zinc-800 pb-6">
+      <div>
+        <div class="text-xs font-mono uppercase tracking-wider text-sky-700 dark:text-sky-400 mb-1">
+          @micropasts/record-completeness · PAS / Antiquities Schema (74 Columns)
+        </div>
+        <h1 class="text-3xl font-bold tracking-tight">PAS Record Completeness Audit</h1>
+        <p class="text-sm text-stone-600 dark:text-zinc-400 mt-1.5 max-w-2xl">
+          Full 74-column antiquities schema audit for <code class="font-mono">IARCH-656E61</code> where all fields are required except <code class="font-mono">updated_by</code> and <code class="font-mono">updated_at</code>.
+        </p>
+      </div>
+      <div class="flex items-center gap-2">
+        <a href="./index.html"
+          class="rounded-md border border-stone-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-stone-800 dark:text-zinc-200 px-3 py-1.5 text-xs font-medium hover:bg-stone-100 dark:hover:bg-zinc-800">
+          ← Default Schema Demo
+        </a>
+        <button id="theme-toggle" type="button"
+          class="rounded-md border border-stone-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-stone-800 dark:text-zinc-200 px-3 py-1.5 text-xs font-medium hover:bg-stone-100 dark:hover:bg-zinc-800">
+          Toggle Dark Mode
+        </button>
+      </div>
+    </header>
+
+    <section class="space-y-2">
+      <h2 class="text-xs font-semibold uppercase tracking-wider text-stone-600 dark:text-zinc-400">
+        Record IARCH-656E61 · 2 Denarii to Augustus NC 2011
+      </h2>
+      <record-completeness-tw id="pas-audit"></record-completeness-tw>
+    </section>
+
+  </div>
+
+  <script type="module">
+    import './record-completeness.esm.js';
+
+    const FULL_ANTIQUITIES_SCHEMA = [
+      { key: 'id', label: 'ID', weight: 1, required: true },
+      { key: 'find_identifier', label: 'Find Identifier', weight: 2, required: true },
+      { key: 'title', label: 'Title', weight: 2, required: true },
+      { key: 'hoard_id', label: 'Hoard ID', weight: 1, required: true },
+      { key: 'finder_id', label: 'Finder', weight: 1, required: true },
+      { key: 'finder_2_id', label: 'Finder 2', weight: 1, required: true },
+      { key: 'recorder_id', label: 'Recorder', weight: 1, required: true },
+      { key: 'identifier_1_id', label: 'Identifier 1', weight: 1, required: true },
+      { key: 'identifier_2_id', label: 'Identifier 2', weight: 1, required: true },
+      { key: 'smr_reference', label: 'SMR Reference', weight: 1, required: true },
+      { key: 'smr_reference_no', label: 'SMR Reference No', weight: 1, required: true },
+      { key: 'other_reference', label: 'Other Reference', weight: 1, required: true },
+      { key: 'museum_accession_number', label: 'Museum Accession Number', weight: 1, required: true },
+      { key: 'date_found_1', label: 'Date Found 1', weight: 1, required: true },
+      { key: 'date_found_1_qualifier_id', label: 'Date Found 1 Qualifier', weight: 1, required: true },
+      { key: 'date_found_2', label: 'Date Found 2', weight: 1, required: true },
+      { key: 'date_found_2_qualifier_id', label: 'Date Found 2 Qualifier', weight: 1, required: true },
+      { key: 'ascribed_culture_id', label: 'Ascribed Culture', weight: 1, required: true },
+      { key: 'discovery_method_id', label: 'Discovery Method', weight: 1, required: true },
+      { key: 'recovery_method_id', label: 'Recovery Method', weight: 1, required: true },
+      { key: 'discovery_circumstance', label: 'Discovery Circumstance', weight: 1, required: true },
+      { key: 'description', label: 'Description', weight: 2, required: true },
+      { key: 'object_term_id', label: 'Object Term', weight: 2, required: true },
+      { key: 'object_type_certainty_id', label: 'Object Type Certainty', weight: 1, required: true },
+      { key: 'classification', label: 'Classification', weight: 1, required: true },
+      { key: 'subclass', label: 'Subclass', weight: 1, required: true },
+      { key: 'inscription', label: 'Inscription', weight: 1, required: true },
+      { key: 'object_date_1_certainty_id', label: 'Object Date 1 Certainty', weight: 1, required: true },
+      { key: 'object_date_1_period_id', label: 'Object Date 1 Period', weight: 1, required: true },
+      { key: 'object_date_2_certainty_id', label: 'Object Date 2 Certainty', weight: 1, required: true },
+      { key: 'object_date_2_period_id', label: 'Object Date 2 Period', weight: 1, required: true },
+      { key: 'object_date_1_subperiod_id', label: 'Object Date 1 Subperiod', weight: 1, required: true },
+      { key: 'object_date_2_subperiod_id', label: 'Object Date 2 Subperiod', weight: 1, required: true },
+      { key: 'broad_period_id', label: 'Broad Period', weight: 1, required: true },
+      { key: 'num_date_1_qualifier_id', label: 'Num Date 1 Qualifier', weight: 1, required: true },
+      { key: 'num_date_1', label: 'Num Date 1', weight: 1, required: true },
+      { key: 'num_date_2_qualifier_id', label: 'Num Date 2 Qualifier', weight: 1, required: true },
+      { key: 'num_date_2', label: 'Num Date 2', weight: 1, required: true },
+      { key: 'material_1_id', label: 'Material 1', weight: 1, required: true },
+      { key: 'material_2_id', label: 'Material 2', weight: 1, required: true },
+      { key: 'manufacture_method_id', label: 'Manufacture Method', weight: 1, required: true },
+      { key: 'decoration_method_id', label: 'Decoration Method', weight: 1, required: true },
+      { key: 'surface_treatment_id', label: 'Surface Treatment', weight: 1, required: true },
+      { key: 'decoration_style_id', label: 'Decoration Style', weight: 1, required: true },
+      { key: 'wear_id', label: 'Wear', weight: 1, required: true },
+      { key: 'preservation_id', label: 'Preservation', weight: 1, required: true },
+      { key: 'completeness_id', label: 'Completeness', weight: 1, required: true },
+      { key: 'reuse', label: 'Reuse', weight: 1, required: true },
+      { key: 'reuse_period_id', label: 'Reuse Period', weight: 1, required: true },
+      { key: 'length', label: 'Length', weight: 1, required: true },
+      { key: 'width', label: 'Width', weight: 1, required: true },
+      { key: 'height', label: 'Height', weight: 1, required: true },
+      { key: 'thickness', label: 'Thickness', weight: 1, required: true },
+      { key: 'diameter', label: 'Diameter', weight: 1, required: true },
+      { key: 'weight', label: 'Weight', weight: 1, required: true },
+      { key: 'quantity', label: 'Quantity', weight: 1, required: true },
+      { key: 'current_object_location_id', label: 'Current Object Location', weight: 1, required: true },
+      { key: 'subsequent_action_id', label: 'Subsequent Action', weight: 1, required: true },
+      { key: 'notes', label: 'Notes', weight: 1, required: true },
+      { key: 'workflow_stage_id', label: 'Workflow Stage', weight: 1, required: true },
+      { key: 'institution_id', label: 'Institution', weight: 1, required: true },
+      { key: 'find_of_note', label: 'Find of Note', weight: 1, required: true },
+      { key: 'find_of_note_reason_id', label: 'Find of Note Reason', weight: 1, required: true },
+      { key: 'find_of_note_description', label: 'Find of Note Description', weight: 1, required: true },
+      { key: 'treasure_status', label: 'Treasure Status', weight: 1, required: true },
+      { key: 'treasure_case_id', label: 'Treasure Case ID', weight: 1, required: true },
+      { key: 'rally_id', label: 'Rally ID', weight: 1, required: true },
+      { key: 'is_hoard_container', label: 'Is Hoard Container', weight: 1, required: true },
+      { key: 'has_3d', label: 'Has 3D', weight: 1, required: true },
+      { key: 'dbpedia_slug', label: 'DBpedia Slug', weight: 1, required: true },
+      { key: 'created_by', label: 'Created By', weight: 1, required: true },
+      { key: 'updated_by', label: 'Updated By', weight: 0, required: false },
+      { key: 'created_at', label: 'Created At', weight: 1, required: true },
+      { key: 'updated_at', label: 'Updated At', weight: 0, required: false },
+    ];
+
+    const fullAntiquitiesRecord = {
+      id: 1,
+      find_identifier: 'IARCH-656E61',
+      title: '2 Denarii to Augustus NC 2011',
+      hoard_id: 'HOARD-1B1671',
+      finder_id: null,
+      finder_2_id: null,
+      recorder_id: null,
+      identifier_1_id: null,
+      identifier_2_id: null,
+      smr_reference: 'NULL',
+      smr_reference_no: 'NULL',
+      other_reference: 'NULL',
+      museum_accession_number: 'NULL',
+      date_found_1: 'NULL',
+      date_found_1_qualifier_id: 'NULL',
+      date_found_2: 'NULL',
+      date_found_2_qualifier_id: 'NULL',
+      ascribed_culture_id: null,
+      discovery_method_id: null,
+      recovery_method_id: null,
+      discovery_circumstance: 'NULL',
+      description:
+        '2 denarii to Augustus. NC 2011\nTreasure numbers associated with this hoard: 2010 T110\n\nOther PAS records associated with this hoard: BH-E8D6A8; BH-E935C6',
+      object_term_id: 450,
+      object_type_certainty_id: 1,
+      classification: 'NULL',
+      subclass: 'NULL',
+      inscription: 'NULL',
+      object_date_1_certainty_id: null,
+      object_date_1_period_id: 21,
+      object_date_2_certainty_id: null,
+      object_date_2_period_id: null,
+      object_date_1_subperiod_id: null,
+      object_date_2_subperiod_id: null,
+      broad_period_id: 21,
+      num_date_1_qualifier_id: null,
+      num_date_1: null,
+      num_date_2_qualifier_id: null,
+      num_date_2: null,
+      material_1_id: 22,
+      material_2_id: null,
+      manufacture_method_id: null,
+      decoration_method_id: null,
+      surface_treatment_id: null,
+      decoration_style_id: null,
+      wear_id: null,
+      preservation_id: null,
+      completeness_id: null,
+      reuse: 0,
+      reuse_period_id: null,
+      length: null,
+      width: null,
+      height: null,
+      thickness: null,
+      diameter: null,
+      weight: null,
+      quantity: 1,
+      current_object_location_id: 4,
+      subsequent_action_id: null,
+      notes: 'NULL',
+      workflow_stage_id: 3,
+      institution_id: 61,
+      find_of_note: 0,
+      find_of_note_reason_id: 3,
+      find_of_note_description: 'NULL',
+      treasure_status: 0,
+      treasure_case_id: null,
+      rally_id: null,
+      is_hoard_container: 0,
+      has_3d: 0,
+      dbpedia_slug: 'NULL',
+      created_by: 2,
+      updated_by: 2,
+      created_at: '2015-01-13 11:57:25',
+      updated_at: '2026-11-03 12:10:59',
+    };
+
+    const el = document.getElementById('pas-audit');
+    el.setSchema(FULL_ANTIQUITIES_SCHEMA);
+    el.setRecord(fullAntiquitiesRecord);
+
+    document.getElementById('theme-toggle').addEventListener('click', () => {
+      const isDark = document.documentElement.classList.toggle('dark');
+      localStorage.setItem('rc-demo-theme', isDark ? 'dark' : 'light');
+    });
+  </script>
+</body>
+</html>
