@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>@micropasts/record-completeness — Metadata Quality Demo</title>
+  <script>
+    (function () {
+      const saved = localStorage.getItem('rc-demo-theme');
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      if (saved === 'dark' || (!saved && prefersDark)) {
+        document.documentElement.classList.add('dark');
+      }
+    })();
+  </script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = { darkMode: 'class' };
+  </script>
+</head>
+<body class="bg-stone-50 text-stone-900 dark:bg-zinc-950 dark:text-zinc-100 min-h-screen transition-colors">
+  <div class="max-w-5xl mx-auto px-6 py-10 space-y-10">
+
+    <header class="flex flex-wrap items-start justify-between gap-4 border-b border-stone-200 dark:border-zinc-800 pb-6">
+      <div>
+        <div class="text-xs font-mono uppercase tracking-wider text-sky-700 dark:text-sky-400 mb-1">
+          @micropasts/record-completeness · Metadata Audit
+        </div>
+        <h1 class="text-3xl font-bold tracking-tight">Record Completeness Checker</h1>
+        <p class="text-sm text-stone-600 dark:text-zinc-400 mt-1.5 max-w-2xl">
+          Score cultural heritage records against required and recommended metadata fields and spot missing URIs, rights, or provenance.
+        </p>
+      </div>
+      <button id="theme-toggle" type="button"
+        class="rounded-md border border-stone-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-stone-800 dark:text-zinc-200 px-3 py-1.5 text-xs font-medium hover:bg-stone-100 dark:hover:bg-zinc-800">
+        Toggle Dark Mode
+      </button>
+    </header>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <section class="space-y-2">
+        <h2 class="text-xs font-semibold uppercase tracking-wider text-stone-600 dark:text-zinc-400">
+          1. Tailwind Light-DOM (&lt;record-completeness-tw&gt;)
+        </h2>
+        <record-completeness-tw>
+          <script type="application/json">
+            {
+              "identifier": "PAS-SUR-12A901",
+              "title": "Roman silver denarius of Trajan",
+              "type": "Coin",
+              "date": "AD 98–117",
+              "place": "Near Farnham, Surrey (TL 84)",
+              "description": "Silver denarius showing laureate bust of Trajan and Victory advancing left.",
+              "rights": "CC BY 4.0",
+              "authorityUri": "https://nomisma.org/id/denarius"
+            }
+          </script>
+        </record-completeness-tw>
+      </section>
+
+      <section class="space-y-2">
+        <h2 class="text-xs font-semibold uppercase tracking-wider text-stone-600 dark:text-zinc-400">
+          2. Shadow DOM (&lt;record-completeness&gt;)
+        </h2>
+        <record-completeness>
+          <script type="application/json">
+            {
+              "identifier": "EXC-2026-044",
+              "title": "Copper-alloy brooches (pair)",
+              "type": "Fibula",
+              "date": "",
+              "place": "",
+              "description": "",
+              "rights": ""
+            }
+          </script>
+        </record-completeness>
+      </section>
+    </div>
+
+  </div>
+
+  <script type="module">
+    import './record-completeness.esm.js';
+
+    document.getElementById('theme-toggle').addEventListener('click', () => {
+      const isDark = document.documentElement.classList.toggle('dark');
+      localStorage.setItem('rc-demo-theme', isDark ? 'dark' : 'light');
+    });
+  </script>
+</body>
+</html>

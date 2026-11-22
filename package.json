@@ -1,0 +1,39 @@
+{
+  "name": "@micropasts/record-completeness",
+  "version": "0.1.0",
+  "description": "Zero-dependency JavaScript Web Components for auditing cultural heritage metadata completeness, missing fields, and authority URI coverage.",
+  "type": "module",
+  "main": "./dist/record-completeness.esm.js",
+  "module": "./dist/record-completeness.esm.js",
+  "unpkg": "./dist/record-completeness.iife.js",
+  "jsdelivr": "./dist/record-completeness.iife.js",
+  "exports": {
+    ".": {
+      "import": "./dist/record-completeness.esm.js",
+      "default": "./src/index.js"
+    },
+    "./core": "./src/core.js",
+    "./shadow": "./src/shadow.js",
+    "./tailwind": "./src/tailwind.js"
+  },
+  "files": [
+    "dist",
+    "src",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "node scripts/build.js",
+    "dev": "node scripts/build.js && npx serve docs",
+    "prepare": "npm run build"
+  },
+  "keywords": [
+    "metadata",
+    "completeness",
+    "data-quality",
+    "cultural-heritage",
+    "web-components",
+    "tailwindcss",
+    "micropasts"
+  ],
+  "license": "MIT"
+}
